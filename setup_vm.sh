@@ -15,9 +15,12 @@ rm go1.21.0.linux-amd64.tar.gz
 
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
 
 echo 'export PATH=$PATH:/usr/local/go/bin:/home/ubuntu/go/bin' >> /home/ubuntu/.bashrc
 
-su - ubuntu
+sudo -i -u ubuntu bash << EOF
+/usr/local/go/bin/go install sigs.k8s.io/kind@v0.20.0
+EOF
 
-go install sigs.k8s.io/kind@v0.20.0
+su - ubuntu
