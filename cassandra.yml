@@ -45,7 +45,7 @@ spec:
           - name: CASSANDRA_SEEDS
             value: "cassandra-0.cassandra-service.default.svc.cluster.local"
           - name: CASSANDRA_CLUSTER_NAME
-            value: "ece473-prj04"
+            value: "ece573-prj04"
         volumeMounts:
         - name: cassandra-data
           mountPath: /var/lib/cassandra

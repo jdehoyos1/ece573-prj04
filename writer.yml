@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ece473-prj04-writer
+  name: ece573-prj04-writer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ece473-prj04-writer
+      app: ece573-prj04-writer
   template:
     metadata:
       labels:
-        app: ece473-prj04-writer
+        app: ece573-prj04-writer
     spec:
       containers:
         - name: writer
-          image: ece473-prj04-writer:v1
+          image: ece573-prj04-writer:v1
           env:
           - name: CASSANDRA_SEEDS
             value: "cassandra-service.default.svc.cluster.local"

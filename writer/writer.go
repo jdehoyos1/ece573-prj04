@@ -49,51 +49,51 @@ func main() {
 	log.Printf("Connected to cluster %s", clusterName)
 
 	if err := session.Query(
-		`CREATE KEYSPACE IF NOT EXISTS ece473
+		`CREATE KEYSPACE IF NOT EXISTS ece573
 			WITH replication = {
 				'class':'SimpleStrategy',
 				'replication_factor':3}`).
 		Exec(); err != nil {
-		log.Fatalf("Cannot create keyspace ece473: %v", err)
+		log.Fatalf("Cannot create keyspace ece573: %v", err)
 	}
 
 	if err := session.Query(
-		`CREATE TABLE IF NOT EXISTS ece473.prj04 (
+		`CREATE TABLE IF NOT EXISTS ece573.prj04 (
 			topic text, seq int, value double,
 			PRIMARY KEY (topic, seq))`).
 		Exec(); err != nil {
-		log.Fatalf("Cannot create table ece473.prj04: %v", err)
+		log.Fatalf("Cannot create table ece573.prj04: %v", err)
 	}
 
 	if err := session.Query(
-		`CREATE TABLE IF NOT EXISTS ece473.prj04_last_seq (
+		`CREATE TABLE IF NOT EXISTS ece573.prj04_last_seq (
 			topic text, seq int,
 			PRIMARY KEY (topic))`).
 		Exec(); err != nil {
-		log.Fatalf("Cannot create table ece473.prj04_last_seq: %v", err)
+		log.Fatalf("Cannot create table ece573.prj04_last_seq: %v", err)
 	}
 
-	log.Printf("Tables ece473.prj04 and ece473.prj04_last_seq ready.")
+	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
-	// Modify code below to read lastSeq from ece473.prj04_last_seq
+	// Modify code below to read lastSeq from ece573.prj04_last_seq
 	lastSeq := 0
 
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
 		value := rand.Float64()
 		err := session.Query(
-			`INSERT INTO ece473.prj04 (topic, seq, value) VALUES (?, ?, ?)`,
+			`INSERT INTO ece573.prj04 (topic, seq, value) VALUES (?, ?, ?)`,
 			topic, seq, value).
 			Exec()
 		if err != nil {
-			log.Fatalf("Cannot write %d to table ece473.prj04: %v", seq, err)
+			log.Fatalf("Cannot write %d to table ece573.prj04: %v", seq, err)
 		}
 		err = session.Query(
-			`INSERT INTO ece473.prj04_last_seq (topic, seq) VALUES (?, ?)`,
+			`INSERT INTO ece573.prj04_last_seq (topic, seq) VALUES (?, ?)`,
 			topic, seq).
 			Exec()
 		if err != nil {
-			log.Fatalf("Cannot write %d to table ece473.prj04_last_seq: %v", seq, err)
+			log.Fatalf("Cannot write %d to table ece573.prj04_last_seq: %v", seq, err)
 		}
 
 		if seq%1000 == 0 {
