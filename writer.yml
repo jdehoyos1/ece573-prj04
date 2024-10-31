@@ -22,5 +22,4 @@ spec:
             value: "SecIV" 
           - name: CONSISTENCY
             value: "QUORUM" 
-          - name: CASSANDRA_SEEDS
-            value: "cassandra-service" 
+       
