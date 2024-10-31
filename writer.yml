@@ -19,7 +19,7 @@ spec:
           - name: CASSANDRA_SEEDS
             value: "cassandra-service.default.svc.cluster.local"
           - name: TOPIC
-            value: "SecV" 
+            value: "SecV-Stateless-App" 
           - name: CONSISTENCY
-            value: "ONE" 
+            value: "ALL" 
 
