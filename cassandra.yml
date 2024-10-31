@@ -16,7 +16,7 @@ metadata:
   name: cassandra
 spec:
   serviceName: cassandra-service
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: cassandra
