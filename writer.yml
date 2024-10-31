@@ -17,9 +17,9 @@ spec:
           image: ece573-prj04-writer:v1
           env:
           - name: CASSANDRA_SEEDS
-            value: "cassandra-service.default.svc.cluster.local"
+            value: "cassandra-service"
           - name: TOPIC
             value: "SecIV" 
           - name: CONSISTENCY
             value: "QUORUM" 
-       
+
