@@ -76,7 +76,22 @@ func main() {
 	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
 	// Modify code below to read lastSeq from ece573.prj04_last_seq
-	lastSeq := 0
+	// Leer el último valor de seq desde ece573.prj04_last_seq
+var lastSeq int
+if err := session.Query(
+	`SELECT seq FROM ece573.prj04_last_seq WHERE topic = ?`,
+	topic).Scan(&lastSeq); err != nil {
+	// Si no se encuentra el topic, lastSeq permanece en 0, asumiendo que es un nuevo tópico
+	if err == gocql.ErrNotFound {
+		lastSeq = 0
+		log.Printf("No previous sequence found for topic %s, starting from lastSeq=0", topic)
+	} else {
+		log.Fatalf("Cannot read lastSeq from ece573.prj04_last_seq: %v", err)
+	}
+} else {
+	log.Printf("Resuming from lastSeq=%d for topic %s", lastSeq, topic)
+}
+
 
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
