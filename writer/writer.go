@@ -76,7 +76,14 @@ func main() {
 	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
 	// Modify code below to read lastSeq from ece573.prj04_last_seq
-	lastSeq := 0
+	var lastSeq int
+	err = session.Query(`SELECT seq FROM prj04_last_seq LIMIT 1`).Scan(&lastSeq)
+    if err != nil {
+        log.Fatal("Error al leer el último valor seq:", err)
+    }
+
+    fmt.Printf("Último seq leído: %d\n", lastSeq)
+	
 
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
