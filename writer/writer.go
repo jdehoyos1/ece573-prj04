@@ -1,117 +1,58 @@
 package main
 
 import (
-	"log"
-	"math/rand"
-	"os"
-	"strings"
-	"time"
+    "log"
+    "math/rand"
+    "os"
+    "time"
 
-	"github.com/gocql/gocql"
+    "github.com/gocql/gocql"
 )
 
 func main() {
-	topic := os.Getenv("TOPIC")
-	if topic == "" {
-		log.Fatalf("Unknown topic")
-	}
+    // Configuración de variables de entorno
+    cassandraHost := os.Getenv("CASSANDRA_SEEDS")
+    topic := os.Getenv("TOPIC")
+    consistency := os.Getenv("CONSISTENCY")
 
-	cs := os.Getenv("CONSISTENCY")
-	consistency := gocql.All
-	switch strings.ToUpper(cs) {
-	case "ALL":
-	case "ONE":
-		consistency = gocql.One
-	case "QUORUM":
-		consistency = gocql.Quorum
-	default:
-		log.Fatalf("Unknown consistency level %s", cs)
-	}
+    // Configuración de la conexión al clúster de Cassandra
+    cluster := gocql.NewCluster(cassandraHost)
+    cluster.Consistency = gocql.ParseConsistency(consistency)
+    session, err := cluster.CreateSession()
+    if err != nil {
+        log.Fatalf("Error al conectar con Cassandra: %v", err)
+    }
+    defer session.Close()
 
-	seed := os.Getenv("CASSANDRA_SEEDS")
-	log.Printf(
-		"Connecting cluster at %s with consistency %s for topic %s",
-		seed, consistency, topic)
+    log.Printf("Conectado al clúster en %s con consistencia %s para el tópico %s", cassandraHost, consistency, topic)
 
-	cluster := gocql.NewCluster(seed)
-	cluster.Consistency = consistency
-	session, err := cluster.CreateSession()
-	if err != nil {
-		log.Fatalf("Cannot connect to cluster at %s: %v", seed, err)
-	}
-	defer session.Close()
+    // Crear tabla de datos principal si no existe
+    if err := session.Query(`
+        CREATE TABLE IF NOT EXISTS ece573.prj04 (
+            topic text,
+            seq int,
+            value float,
+            PRIMARY KEY (topic, seq)
+        )`).Exec(); err != nil {
+        log.Fatalf("Error al crear la tabla ece573.prj04: %v", err)
+    }
 
-	var clusterName string
-	if err := session.Query(
-		"SELECT cluster_name FROM system.local").
-		Scan(&clusterName); err != nil {
-		log.Fatalf("Cannot query cluster: %v", err)
-	}
-	log.Printf("Connected to cluster %s", clusterName)
+    log.Println("Tabla ece573.prj04 lista.")
 
-
-	if err := session.Query(
-		`CREATE KEYSPACE IF NOT EXISTS ece573
-			WITH replication = {
-				'class':'SimpleStrategy',
-				'replication_factor':3}`).
-		Exec(); err != nil {
-		log.Fatalf("Cannot create keyspace ece573: %v", err)
-	}
-
-	if err := session.Query(
-		`CREATE TABLE IF NOT EXISTS ece573.prj04 (
-			topic text, seq int, value double,
-			PRIMARY KEY (topic, seq))`).
-		Exec(); err != nil {
-		log.Fatalf("Cannot create table ece573.prj04: %v", err)
-	}
-
-	if err := session.Query(
-		`CREATE TABLE IF NOT EXISTS ece573.prj04_last_seq (
-			topic text, seq int,
-			PRIMARY KEY (topic))`).
-		Exec(); err != nil {
-		log.Fatalf("Cannot create table ece573.prj04_last_seq: %v", err)
-	}
-
-	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
-
-	// Fetch the last sequence number
-	var lastSeq int
-	err = session.Query(
-		"SELECT seq FROM ece573.prj04_last_seq WHERE topic = ? LIMIT 1",
-		topic).
-		Scan(&lastSeq)
-	if err != nil && err != gocql.ErrNotFound {
-		log.Fatalf("Failed to retrieve last sequence for topic %s: %v", topic, err)
-	}
-
-	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
-	for seq := lastSeq + 1; ; seq++ {
-		value := rand.Float64()
-		err := session.Query(
-			`INSERT INTO ece573.prj04 (topic, seq, value) VALUES (?, ?, ?)`,
-			topic, seq, value).
-			Exec()
-		if err != nil {
-			log.Printf("Cannot write %d to table ece573.prj04: %v. Retrying in 10 seconds...", seq, err)
-			time.Sleep(10 * time.Second)
-			seq-- // Retry current seq
-			continue
-		}
-		err = session.Query(
-			`INSERT INTO ece573.prj04_last_seq (topic, seq) VALUES (?, ?)`,
-			topic, seq).
-			Exec()
-		if err != nil {
-			log.Printf("Cannot update last seq %d in table ece573.prj04_last_seq: %v", seq, err)
-			seq-- // Retry current seq for consistency
-			continue
-		}
-
-		if seq%1000 == 0 {
-			log.Printf("%s: inserted rows to seq %d", topic, seq)
-		}
-	}
+    // Iniciar la inserción secuencial de datos desde seq=1
+    for seq := 1; ; seq++ {
+        value := rand.Float64()
+        err := session.Query(
+            `INSERT INTO ece573.prj04 (topic, seq, value) VALUES (?, ?, ?)`,
+            topic, seq, value).Exec()
+        if err != nil {
+            log.Printf("No se pudo escribir el valor %d en la tabla ece573.prj04: %v", seq, err)
+            time.Sleep(10 * time.Second) // Esperar 10 segundos antes de reintentar
+            seq-- // Retroceder el contador de secuencia
+            continue
+        }
+        if seq%1000 == 0 {
+            log.Printf("%s: inserted %d rows", topic, seq)
+        }
+    }
 }
