@@ -19,6 +19,7 @@ func main() {
 	consistency := gocql.All
 	switch strings.ToUpper(cs) {
 	case "ALL":
+		consistency = gocql.All
 	case "ONE":
 		consistency = gocql.One
 	case "QUORUM":
@@ -42,8 +43,7 @@ func main() {
 
 	var clusterName string
 	if err := session.Query(
-		"SELECT cluster_name FROM system.local").
-		Scan(&clusterName); err != nil {
+		"SELECT cluster_name FROM system.local").Scan(&clusterName); err != nil {
 		log.Fatalf("Cannot query cluster: %v", err)
 	}
 	log.Printf("Connected to cluster %s", clusterName)
@@ -75,40 +75,34 @@ func main() {
 
 	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
-	// Modify code below to read lastSeq from ece573.prj04_last_seq
 	// Leer el último valor de seq desde ece573.prj04_last_seq
-// Leer el último valor de seq desde ece573.prj04_last_seq
-var lastSeq int
-if err := session.Query(
-    `SELECT seq FROM ece573.prj04_last_seq WHERE topic = ?`,
-    topic).Scan(&lastSeq); err != nil {
-    if err == gocql.ErrNotFound {
-        lastSeq = 0
-        log.Printf("No previous sequence found for topic %s, starting from lastSeq=0", topic)
-    } else {
-        log.Fatalf("Cannot read lastSeq from ece573.prj04_last_seq: %v", err)
-    }
-} else {
-    log.Printf("Resuming from lastSeq=%d for topic %s", lastSeq, topic)
-}
-
-
-
+	var lastSeq int
+	if err := session.Query(
+		`SELECT seq FROM ece573.prj04_last_seq WHERE topic = ?`,
+		topic).Scan(&lastSeq); err != nil {
+		if err == gocql.ErrNotFound {
+			lastSeq = 0
+			log.Printf("No previous sequence found for topic %s, starting from lastSeq=0", topic)
+		} else {
+			log.Fatalf("Cannot read lastSeq from ece573.prj04_last_seq: %v", err)
+		}
+	} else {
+		log.Printf("Resuming from lastSeq=%d for topic %s", lastSeq, topic)
+	}
 
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
 		value := rand.Float64()
 		err := session.Query(
 			`INSERT INTO ece573.prj04 (topic, seq, value) VALUES (?, ?, ?)`,
-			topic, seq, value).
-			Exec()
+			topic, seq, value).Exec()
 		if err != nil {
 			log.Fatalf("Cannot write %d to table ece573.prj04: %v", seq, err)
 		}
 		err = session.Query(
-			`INSERT INTO ece573.prj04_last_seq (topic, seq) VALUES (?, ?)`,
-			topic, seq).
-			Exec()
+			`INSERT INTO ece573.prj04_last_seq (topic, seq) VALUES (?, ?)
+				ON CONFLICT (topic) DO UPDATE SET seq = ?`,
+			topic, seq, seq).Exec()
 		if err != nil {
 			log.Fatalf("Cannot write %d to table ece573.prj04_last_seq: %v", seq, err)
 		}
