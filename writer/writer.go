@@ -94,6 +94,7 @@ if err := session.Query(
 
 
 
+
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
 		value := rand.Float64()
