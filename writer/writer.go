@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/gocql/gocql"
 )
@@ -49,7 +48,6 @@ func main() {
 	}
 	log.Printf("Connected to cluster %s", clusterName)
 
-
 	if err := session.Query(
 		`CREATE KEYSPACE IF NOT EXISTS ece573
 			WITH replication = {
@@ -77,15 +75,8 @@ func main() {
 
 	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
-	// Fetch the last sequence number
-	lastSeq:=0
-	err = session.Query(
-		"SELECT seq FROM ece573.prj04_last_seq WHERE topic = ? LIMIT 1",
-		topic).
-		Scan(&lastSeq)
-	if err != nil && err != gocql.ErrNotFound {
-		log.Fatalf("Failed to retrieve last sequence for topic %s: %v", topic, err)
-	}
+	// Modify code below to read lastSeq from ece573.prj04_last_seq
+	lastSeq := 0
 
 	log.Printf("%s: start from lastSeq=%d", topic, lastSeq)
 	for seq := lastSeq + 1; ; seq++ {
@@ -95,19 +86,14 @@ func main() {
 			topic, seq, value).
 			Exec()
 		if err != nil {
-			log.Printf("Cannot write %d to table ece573.prj04: %v. Retrying in 10 seconds...", seq, err)
-			time.Sleep(10 * time.Second)
-			seq-- // Retry current seq
-			continue
+			log.Fatalf("Cannot write %d to table ece573.prj04: %v", seq, err)
 		}
 		err = session.Query(
 			`INSERT INTO ece573.prj04_last_seq (topic, seq) VALUES (?, ?)`,
 			topic, seq).
 			Exec()
 		if err != nil {
-			log.Printf("Cannot update last seq %d in table ece573.prj04_last_seq: %v", seq, err)
-			seq-- // Retry current seq for consistency
-			continue
+			log.Fatalf("Cannot write %d to table ece573.prj04_last_seq: %v", seq, err)
 		}
 
 		if seq%1000 == 0 {
