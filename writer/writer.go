@@ -78,7 +78,7 @@ func main() {
 	log.Printf("Tables ece573.prj04 and ece573.prj04_last_seq ready.")
 
 	// Fetch the last sequence number
-	var lastSeq int
+	lastSeq:=0
 	err = session.Query(
 		"SELECT seq FROM ece573.prj04_last_seq WHERE topic = ? LIMIT 1",
 		topic).
